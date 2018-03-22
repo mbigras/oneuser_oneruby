@@ -1,0 +1,55 @@
+# user
+# public key
+# ruby-install version
+# ruby version
+# prefix
+---
+- hosts: all
+  tasks:
+
+  - name: Create user
+    user:
+      name: foo
+
+  - name: Set authorized key took from file
+    authorized_key:
+      user: foo
+      state: present
+      key: "{{ lookup('file', playbook_dir + '/id_rsa.pub') }}"
+
+  - name: Install ruby-install dependencies
+    yum:
+      name: "{{ item }}"
+    with_items:
+      - bzip2
+
+  - name: Download ruby-install
+    unarchive:
+      src: https://github.com/postmodern/ruby-install/archive/v0.6.1.tar.gz
+      dest: /home/foo/
+      remote_src: yes
+
+  - name: Install ruby-install
+    # idempotent shell command https://goo.gl/nMwQ89 
+    shell: >
+            ruby-install --version | grep -q 0.6.1 
+            && echo -n 'installed' 
+            || make install
+    register: ruby_install
+    changed_when: ruby_install.stdout != 'installed'
+    args:
+      chdir: /home/foo/ruby-install-0.6.1
+
+  - name: Install ruby
+    shell: >
+            /home/foo/ruby-2.5.0/bin/ruby --version | grep -q 2.5.0
+            && echo -n 'installed'
+            || ruby-install --prefix /home/foo/ruby-2.5.0 ruby 2.5.0 -- --disable-install-doc
+    register: ruby
+    changed_when: ruby.stdout != 'installed'
+
+  - name: Add ruby to PATH in bashrc
+    lineinfile:
+      dest: /home/foo/.bashrc
+      line: PATH=/home/foo/ruby-2.5.0/bin:$PATH
+      owner: foo
