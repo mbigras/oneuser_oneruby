@@ -5,10 +5,17 @@
 ## Usage example
 
 ```
-ssh-keygen -q -b 2048 -t rsa -N '' -f id_rsa		# Generate an SSH keypair
-export TF_VAR_do_token="$(lpass show --notes do_token)"	# Recover Digital Ocean token
+export TF_VAR_do_token="$(lpass show --notes do_token)"
+lpass logout -f
+ssh-keygen -q -b 2048 -t rsa -N '' -f id_rsa
+```
+
+```
 terraform apply
 ansible-playbook playbook.yml
+```
+
+```
 ip=$(terraform output | awk '/ip/ { print $NF }')
 ssh -i id_rsa root@$ip ruby --version
 ssh -i id_rsa foo@$ip ruby --version
@@ -16,7 +23,7 @@ ssh -i id_rsa foo@$ip ruby --version
 
 ```
 terraform destroy -force
-rm *.tfstate* *.retry id_rsa*
+rm *.tfstate* id_rsa*
 ```
 
 ## Links
